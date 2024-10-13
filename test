@@ -50,6 +50,234 @@ if success then
 
 task.wait()
 
+-- Function to format numbers
+function format_number(number)
+    local suffixes = {"", "K", "M", "B", "T", "QD"}
+    local suffix_index = 1
+
+    while math.abs(number) >= 1000 and suffix_index < #suffixes do
+        number = number / 1000.0
+        suffix_index = suffix_index + 1
+    end
+
+    return string.format("%.2f%s", number, suffixes[suffix_index])
+end
+
+local player = game:GetService("Players").LocalPlayer
+
+-- Create a highlight and store it in ReplicatedStorage
+local highlightTemplate = Instance.new("Highlight")
+highlightTemplate.FillColor = Color3.new(1, 0, 0) -- Starting color (red)
+highlightTemplate.OutlineColor = Color3.new(0, 0, 0) -- Outline color (black)
+highlightTemplate.Name = "PlayerHighlight"
+highlightTemplate.Parent = game:GetService("ReplicatedStorage")
+
+-- Function to create or update the GUI
+local function createGUI(character)
+    -- Wait for the character's Head to be available
+    local head = character:WaitForChild("Head")
+
+    -- Create a BillboardGui for the display name and stats
+    local billboardGui = head:FindFirstChild("BillboardGui") or Instance.new("BillboardGui")
+    billboardGui.Parent = head
+    billboardGui.Size = UDim2.new(0, 200, 0, 50) -- Size of the GUI
+    billboardGui.StudsOffset = Vector3.new(0, 2, 0) -- Position above the head
+    billboardGui.Adornee = head -- Set the object it will be attached to
+    billboardGui.AlwaysOnTop = true -- Keep it always on top
+
+    -- Create or reuse the TextLabel
+    local usernameLabel = billboardGui:FindFirstChild("UsernameLabel") or Instance.new("TextLabel")
+    usernameLabel.Name = "UsernameLabel" -- Set name for easy reference
+    usernameLabel.Parent = billboardGui
+    usernameLabel.Size = UDim2.new(1, 0, 1, 0) -- Fill the BillboardGui
+    usernameLabel.BackgroundTransparency = 1 -- Make background transparent
+    usernameLabel.TextColor3 = Color3.new(1, 1, 1) -- Initial text color (white)
+    usernameLabel.TextScaled = false -- Disable scaling to set a fixed size
+    usernameLabel.TextSize = 20 -- Set the desired text size (adjust as needed)
+    usernameLabel.TextWrapped = false -- Ensure the text stays on one line
+
+    -- Fetch player stats from ReplicatedStorage
+    local playerStats = game:GetService("ReplicatedStorage"):FindFirstChild("Datas"):FindFirstChild(tostring(player.UserId))
+    local ownerTag = ""
+    local totalStats = math.huge -- Start with the highest possible value
+    local rebirths = 0 -- Default rebirths
+
+    if playerStats then
+        -- Fetch rebirth data
+        local playerRebirths = playerStats:FindFirstChild("Rebirth") and playerStats.Rebirth.Value or 0
+
+        -- Fetch the various stats
+        local strengthStat = playerStats:FindFirstChild("Strength") and playerStats.Strength.Value or math.huge
+        local defenceStat = playerStats:FindFirstChild("Defense") and playerStats.Defense.Value or math.huge
+        local energyStat = playerStats:FindFirstChild("Energy") and playerStats.Energy.Value or math.huge
+        local speedStat = playerStats:FindFirstChild("Speed") and playerStats.Speed.Value or math.huge
+
+        -- Calculate the lowest stat
+        totalStats = math.min(strengthStat, defenceStat, energyStat, speedStat)
+
+        -- Fetch player's health from Humanoid
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        local health = humanoid and humanoid.Health or 0
+
+        -- Add "Owner" tag if the player is one of the specified usernames
+        if player.Name == "Steve72009" or player.Name == "Pserson2" or player.Name == "whowhatwhen1230" then
+            ownerTag = " || Script Creator"
+            usernameLabel.Font = Enum.Font.SpecialElite -- Change font to Special Elite
+        else
+            usernameLabel.Font = Enum.Font.Cartoon -- Default font for other players
+        end
+
+        -- Format the display name, total stats, rebirths, and health
+        usernameLabel.Text = string.format("%s || %s, %d%s, %s HP", 
+            player.DisplayName, 
+            format_number(totalStats), 
+            playerRebirths, 
+            ownerTag, 
+            format_number(health))
+
+    else
+        usernameLabel.Text = player.DisplayName -- Fallback if stats not found
+    end
+
+    usernameLabel.TextStrokeTransparency = .01
+
+    -- Change outline color based on total stats
+    local outlineColor
+    local highlightColor
+    if totalStats >= 1e14 then 
+        highlightColor = Color3.new(1, 0, 1) -- Change color for 100T+
+    elseif totalStats >= 1e13 then 
+        outlineColor = Color3.fromRGB(99, 57, 116) -- Neon Purple
+        highlightColor = Color3.new(0.5, 0, 0.5) -- Royal Purple
+    elseif totalStats >= 1e12 then 
+        outlineColor = Color3.fromRGB(235, 222, 240) -- Light Blue
+        highlightColor = Color3.fromRGB(0, 1, 1) -- Sky Blue
+    elseif totalStats >= 1e11 then
+        outlineColor = Color3.fromRGB(255, 105, 180) -- Hot Pink
+        highlightColor = Color3.new(0, 0, 1) -- Dark Blue
+    elseif totalStats >= 1e10 then
+        outlineColor = Color3.fromRGB(195, 155, 211) -- Dark Green
+        highlightColor = Color3.new(0, 1, 0) -- Green
+    elseif totalStats >= 1e9 then
+        outlineColor = Color3.fromRGB(169, 204, 227) -- Cyan
+        highlightColor = Color3.fromRGB(0, 1, 1) -- Light Blue
+    elseif totalStats >= 1e8 then
+        outlineColor = Color3.fromRGB(255, 215, 0) -- Gold
+        highlightColor = Color3.new(1, 1, 0) -- Yellow
+    elseif totalStats >= 1e7 then
+        outlineColor = Color3.fromRGB(41, 128, 185) -- Dark Green
+        highlightColor = Color3.fromRGB(0.5, 0.5, 0) -- Olive
+    elseif totalStats >= 1e6 then
+        outlineColor = Color3.fromRGB(133, 193, 233) -- Light Blue
+        highlightColor = Color3.fromRGB(0.8, 0.8, 0.8) -- Gray
+    else
+        outlineColor = Color3.new(0, 0, 0) -- Default color
+        highlightColor = Color3.new(0, 0, 0) -- Black
+    end
+
+    -- Update outline color of the username label
+    usernameLabel.TextStrokeTransparency = 0.01 -- Reset stroke transparency
+    usernameLabel.TextStrokeColor3 = outlineColor -- Set outline color
+
+    -- Create a highlight for the character
+    local highlight = highlightTemplate:Clone() -- Clone the template highlight
+    highlight.Parent = character -- Parent it to the character
+    highlight.FillColor = highlightColor -- Set the highlight color
+
+    -- Update stats every 0.2 seconds
+    while true do
+        -- Fetch player stats from ReplicatedStorage again
+        playerStats = game:GetService("ReplicatedStorage"):FindFirstChild("Datas"):FindFirstChild(tostring(player.UserId))
+
+        if playerStats then
+            -- Fetch rebirth data again
+            playerRebirths = playerStats:FindFirstChild("Rebirth") and playerStats.Rebirth.Value or 0
+
+            -- Fetch the various stats again
+            strengthStat = playerStats:FindFirstChild("Strength") and playerStats.Strength.Value or math.huge
+            defenceStat = playerStats:FindFirstChild("Defense") and playerStats.Defense.Value or math.huge
+            energyStat = playerStats:FindFirstChild("Energy") and playerStats.Energy.Value or math.huge
+            speedStat = playerStats:FindFirstChild("Speed") and playerStats.Speed.Value or math.huge
+
+            -- Calculate the lowest stat again
+            totalStats = math.min(strengthStat, defenceStat, energyStat, speedStat)
+
+            -- Fetch player's health again
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            local health = humanoid and humanoid.Health or 0
+
+            -- Update the username label with the latest stats
+            usernameLabel.Text = string.format("%s || %s, %d%s, %s HP", 
+                player.DisplayName, 
+                format_number(totalStats), 
+                playerRebirths, 
+                ownerTag, 
+                format_number(health))
+
+            -- Change outline color based on total stats again
+            if totalStats >= 1e14 then 
+                highlightColor = Color3.new(1, 0, 1) -- Change color for 100T+
+            elseif totalStats >= 1e13 then 
+                outlineColor = Color3.fromRGB(99, 57, 116) -- Neon Purple
+                highlightColor = Color3.new(0.5, 0, 0.5) -- Royal Purple
+            elseif totalStats >= 1e12 then 
+                outlineColor = Color3.fromRGB(235, 222, 240) -- Light Blue
+                highlightColor = Color3.fromRGB(0, 1, 1) -- Sky Blue
+            elseif totalStats >= 1e11 then
+                outlineColor = Color3.fromRGB(255, 105, 180) -- Hot Pink
+                highlightColor = Color3.new(0, 0, 1) -- Dark Blue
+            elseif totalStats >= 1e10 then
+                outlineColor = Color3.fromRGB(195, 155, 211) -- Dark Green
+                highlightColor = Color3.new(0, 1, 0) -- Green
+            elseif totalStats >= 1e9 then
+                outlineColor = Color3.fromRGB(169, 204, 227) -- Cyan
+                highlightColor = Color3.fromRGB(0, 1, 1) -- Light Blue
+            elseif totalStats >= 1e8 then
+                outlineColor = Color3.fromRGB(255, 215, 0) -- Gold
+                highlightColor = Color3.new(1, 1, 0) -- Yellow
+            elseif totalStats >= 1e7 then
+                outlineColor = Color3.fromRGB(41, 128, 185) -- Dark Green
+                highlightColor = Color3.fromRGB(0.5, 0.5, 0) -- Olive
+            elseif totalStats >= 1e6 then
+                outlineColor = Color3.fromRGB(133, 193, 233) -- Light Blue
+                highlightColor = Color3.fromRGB(0.8, 0.8, 0.8) -- Gray
+            else
+                outlineColor = Color3.new(0, 0, 0) -- Default color
+                highlightColor = Color3.new(0, 0, 0) -- Black
+            end
+
+            -- Update outline color of the username label
+            usernameLabel.TextStrokeTransparency = 0.01 -- Reset stroke transparency
+            usernameLabel.TextStrokeColor3 = outlineColor -- Set outline color
+
+            -- Update highlight color for the character
+            highlight.FillColor = highlightColor -- Set the highlight color
+        end
+
+        wait(0.2) -- Update every 0.2 seconds
+    end
+end
+
+-- Connect the function to player character added event
+player.CharacterAdded:Connect(createGUI)
+if player.Character then
+    createGUI(player.Character) -- Call immediately if the character is already loaded
+end
+
+-- Create a function to reset the character
+local function resetCharacter()
+    local player = game.Players.LocalPlayer  -- Get the local player
+    local character = player.Character or player.CharacterAdded:Wait()  -- Get the player's character
+
+    -- Reset the character
+    character:BreakJoints()  -- This will reset the character
+end
+
+-- Infinite loop to reset character every 5 minutes
+while true do
+    wait(60)  -- Wait for 300 seconds (5 minutes)
+    resetCharacter()  -- Call the reset function
+end 
 
 local stackneeded = true
 local targetted;
