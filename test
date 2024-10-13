@@ -1,17 +1,5 @@
 loadstring(game:HttpGet("https://raw.githubusercontent.com/luca5432/Roblox-ANTI-AFK-SCRIPT/main/Script", true))()
 
-local function resetCharacter()
-    local player = game.Players.LocalPlayer  -- Get the local player
-    local character = player.Character or player.CharacterAdded:Wait()  -- Get the player's character
-
-    character:BreakJoints()  -- This will reset the character
-end
-
-while true do
-    wait(60)  -- 5 minutes
-    resetCharacter()
-end
-
 local loaded = false
  
    success, err = pcall(function()
@@ -1584,3 +1572,16 @@ end
         
     end
 end
+
+local function resetCharacter()
+    local player = game.Players.LocalPlayer  -- Get the local player
+    local character = player.Character or player.CharacterAdded:Wait()  -- Get the player's character
+
+    character:BreakJoints()  -- This will reset the character
+end
+
+while true do
+    wait(60)  -- 5 minutes
+    resetCharacter()
+end
+
